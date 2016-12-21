@@ -1,3 +1,21 @@
+/*
+*Author: Maike Jung
+*Date: 15.11.2016
+
+*Purpose: create the arrival time spectrum of the neutrinos, that can then be uses to 
+    generate random events: generateEvents.c
+    calculate the likelihood for these events:  likelihood.c
+    calculate the binned-likelihood:    binned_likelihood.c
+
+SN - Model: Lawrence-Livermore
+    time spectrum is convoluted with the first hit distribution, to account for not knowing the absolute arrival times
+
+UNITS: mass: eV
+       energy: MeV
+       distance: Mpc
+       time: s
+*/
+
 #include "spectrum.h"
 
 /* time shift due to neutrino mass */
@@ -103,7 +121,7 @@ void generateDist(double mass, double dist, double events, double *distribution,
                     if (f-g >=0 && f-g <=RESE){
                         pNew += GAUSS(g/(RESE/60.0),f/(RESE/60.0))*energySpectrum[f-g];
                     }
-                distribution[t*(RESE-1) +f] = pNew/(RESE/60.0);
+                distribution[t*(RESE-1) +f-1] = pNew/(RESE/60.0);
                 }
             }
         }
@@ -118,16 +136,17 @@ void generateDist(double mass, double dist, double events, double *distribution,
 			        if (arrayIndex <= 0){
 				        arrayIndex = 0;
 			        }
-                    distribution[t*(RESE-1) +e] = LL_energy_spectrum(e/(RESE/60.0))*timeArray[arrayIndex]*triggerEfficiency[e];
+                    distribution[t*(RESE-1) +e-1] = LL_energy_spectrum(e/(RESE/60.0))*timeArray[arrayIndex]*triggerEfficiency[e];
+                    //printf("corr spec: %f %f %e\n", t*10.0/REST, e*60.0/RESE, distribution[t*(RESE-1) +e]);
                 }
             }
     }
+    // normalize the spectrum to one
     int k;
     double normalize = 0;
     for (k=0; k<(RESE-1)*REST;k++){
         normalize += distribution[k]*(1/(REST*0.1))*(1/(RESE/60.0));
     }
-    // todo include events for binned likelihood
     for (k=0; k<(RESE-1)*REST;k++){
         distribution[k] *= 1.0/normalize;
     }
